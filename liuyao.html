@@ -167,7 +167,7 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
 <body>
 <div class="wrap">
 <h1>铜钱法 · 六爻起卦</h1>
-<div class="note"><b>V5.0</b>：写下所问之事 → 摇卦 → 看卦盘 → 点「一键复制」交给任意熟悉《增删卜易》的 AI。程序只负责把卦排准，不替你定用神、不断吉凶。离线可用，数据只存在本机浏览器。</div>
+<div class="note"><b>V5.1</b>：写下所问之事 → 摇卦 → 看卦盘 → 点「一键复制」交给任意熟悉《增删卜易》的 AI。指令要求 AI 按六步作答：断势、找病、找药、转势、进退、反证，帮你知势、借势、转势。程序只负责把卦排准，不替你定用神、不断吉凶。离线可用，数据只存在本机浏览器。</div>
 
 <div class="card">
   <h2>一、所问之事</h2>
@@ -1587,7 +1587,7 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
   if (typeof module === 'object' && module.exports) module.exports = factory;
   else root.LiuyaoBHFactory = factory;
 })(typeof self !== 'undefined' ? self : this, function (C, Z, RZS) {
-  var VER = 'V5.0';
+  var VER = 'V5.1';
   var POS = ['初', '二', '三', '四', '五', '上'];
   var ZW = C.ZHI_WX, SHENG = C.SHENG, KE = C.KE, HE = C.LIUHE, JIN = C.JINSHEN, chong = C.chong;
   var T2S = { 為: '为', 純: '纯', 財: '财', 臨: '临', 頭: '头', 龍: '龙', 變: '变', 陳: '陈', 沖: '冲', 孫: '孙', 復: '复', 風: '风', 剋: '克', 師: '师', 歸: '归', 澤: '泽', 進: '进', 離: '离', 遯: '遁', 謙: '谦', 兌: '兑', 遊: '游', 訟: '讼', 過: '过', 豐: '丰', 恆: '恒', 壯: '壮', 漸: '渐', 渙: '涣', 觀: '观', 節: '节', 濟: '济', 隨: '随', 晉: '晋', 蠱: '蛊', 賁: '贲', 損: '损', 頤: '颐', 剝: '剥', 應: '应', 陽: '阳', 陰: '阴', 宮: '宫', 屬: '属', 絕: '绝', 長: '长' };
@@ -2028,8 +2028,17 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     (qt.unc || []).forEach(function (x) { a.push(x); });
     return a.length ? a : ['无（主用神与问题类型均已由问卦人确认）'];
   }
-  // ================= V5.0 精简断卦包 =================
-  var ZHILING = '请严格依《增删卜易》体系审题取用，以日月旺衰、动变生克为主，结合原忌仇神、空破冲合、世应综合判断。先直接回答问题并给出明确倾向，再说明最关键的两三条卦理和重要反证。二选一直接比较两种方案，不强制为选项各配一爻；无法区分时如实说明。应期有据才报。不得编造人物心理、具体事件或准确率。请用普通人能听懂的白话回答。';
+  // ================= V5.0 精简断卦包 / V5.1 六步断卦指令（断势→找病→找药→转势→进退→反证） =================
+  var ZHILING = [
+    "请严格依《增删卜易》审题取用，综合日月旺衰、原忌仇神、动变生克、空破冲合、世应，帮问卦人知势、借势、转势。六亲所指按本问而定，不套固定含义（如父母不必是文件、官鬼不必是阻碍）。先用一句话写明取用（哪一爻为用神、为何），再按以下六段作答：",
+    "【断势】先答所问，一句话定偏成、偏败或暂难断，不含糊也不硬断。",
+    "【找病】最要紧的1—2个不利因素：哪一爻、何种生克、为何成阻。",
+    "【找药】针对此病的卦中救助（原神生扶、忌神受制、动爻有救等），须综合全卦，不机械认定逢冲必解合、逢值必填实；无可靠转机就直说。",
+    "【转势】2—3件与所问直接相关、易执行的事，每条写明：解决什么问题；采取什么现实措施；看到什么现实信号算已改善。不写“保持冷静、静待时机”类套话。卦象不等于现实（如世爻空亡不等于必缺人手），须结合背景提出核实方向。人能改的是信息、准备、资源、沟通和行动选择，改不了卦中日月、空破。无可行转势就如实说，不强找吉象。",
+    "【进退】具备哪些现实条件可推进，缺哪些应暂缓；应期有卦理才报，不编日期时辰，不与现实条件混同。",
+    "【反证】最强的相反卦理，及需现实核实的不确定因素。",
+    "全文分清卦理、待核实的现实因素、可执行措施。执法、医疗、投资等重大事项，措施以法律、专业规范和客观证据为准，卦象只作反思检查之用。不迎合，不编造心理、背景或百分比，不保证成败。二选一直接比较两方案，不强为选项配爻。白话，精简。"
+  ].join('\n');
   // 【对象】只写“本人”或问卦人在高级设置里指定的他人；问句指向他人、或程序拿不准时，一律“以原问题为准”，不擅自判断关系
   var PERSON_RE = /(某位|某个|这位|那位)?(同学|同事|朋友|领导|上级|老师|学生|孩子|儿子|女儿|老婆|老公|妻子|丈夫|女朋友|男朋友|女友|男友|对象|父亲|母亲|爸爸|妈妈|爸|妈|哥哥|姐姐|弟弟|妹妹|客户|邻居|嫌疑人|当事人|他们|她们|他|她|对方|某人|别人)/;
   function objLine(qt, meta) {
@@ -2201,7 +2210,7 @@ function showResult(rec,noScroll){
   var pbx=$('quickBox'),keepQClosed=!!(pbx&&!pbx.open&&state.viewing&&state.viewing.rec===rec);
   // ── 第一层：卦盘（V5.0：表格 + 一两句动变）──
   h+='<div class="bh" id="quickBox"><div class="text"><small>所问</small><br>'+esc(rec.q||'（未填写）')+(rec.bg?'<br><small>补充背景：'+esc(rec.bg)+'</small>':'')+'</div>';
-  if(state.fromHist)h+='<div class="meta">历史记录（'+esc(state.fromHist)+' 保存），复制内容与当时相同。</div>';
+  if(state.fromHist)h+='<div class="meta">历史记录（'+esc(state.fromHist)+' 保存），卦盘与当时相同，断卦指令为当前版本。</div>';
   h+='<div class="meta">'+esc(tStr(t))+' 北京时间'+(o.ziSwitch23?'（23点换日）':'')+(p&&!p.error?'　'+(rec.ov?'<b>手动</b> 月建'+esc(rec.ov.month)+' 日辰'+esc(rec.ov.day):p.year+'年 '+p.month+'月 '+p.day+'日 '+p.hour+'时')+'　旬空'+p.kong.join(''):'　'+(p?p.error:''))+'</div>';
   h+='<div class="gtitle" style="margin-top:8px"><span class="sym">'+B.sym+'</span><span class="big">'+BH.S(B.fullName)+'</span>'+(V?'<span>之</span><span class="sym">'+V.sym+'</span><span class="big">'+BH.S(V.fullName)+'</span>':'<span>（六爻安静）</span>')+'<span>'+BH.S(r.palace.palace)+'宫'+r.palace.wx+'</span></div>';
   h+=quickTable(r);
@@ -2210,7 +2219,7 @@ function showResult(rec,noScroll){
   // ── 第二层：一键复制 ──
   var ai=aiText();
   h+='<div class="aibox" id="aiBox"><div class="copybar"><button class="primary" id="copyAI">一键复制（交给 AI 断卦）</button></div>';
-  h+='<div class="meta">内容：所问、对象、时间、卦象、六爻、伏神和一段断卦指令，共 '+hanzi(ai)+' 个汉字。</div>';
+  h+='<div class="meta">内容：所问、对象、时间、卦象、六爻、伏神和六步断卦指令，共 '+hanzi(ai)+' 个汉字。</div>';
   h+='<details id="aiPrev"><summary>查看将复制的内容</summary><pre class="aipre" id="aiPre">'+esc(ai)+'</pre></details>';
   h+='<div class="copybar"><button id="copyPan">复制纯卦盘</button><button id="showAI">手动复制</button></div>';
   h+='<div id="manualBox" class="hide"><div class="meta">自动复制不可用时：下面文字已全选，长按或 Ctrl+C 复制。</div><textarea id="manualTa" readonly></textarea></div></div>';
@@ -2477,7 +2486,7 @@ $('tm').addEventListener('input',function(){state.timeEdited=true;renderPillars(
 $('nowBtn').onclick=function(){$('tm').value=nowLocal();state.timeEdited=true;renderPillars()};
 $('zi').onchange=renderPillars;
 
-window.LiuyaoApp={version:'V5.0',hanzi:function(s){return hanzi(s)},_S:function(x){return BH.S(x)},aiText:function(){return aiText()},panText:function(){return panText()},researchText:function(){return researchText()},baihua:function(){var v=state.viewing;return v?BH.plain(v.r,v.zs,metaOf(v.rec,v.qt)):null},qtype:function(){var v=state.viewing;return v?v.qt:qtUI()},termInfo:function(k){var v=state.viewing;return BH.term(k,v&&v.r,v&&v.zs,v&&v.qt)},preview:function(values,time,o){o=o||{};state.fromHist=null;var rec={id:0,q:o.q||'',time:time,zi:o.zi||'0',values:values,coins:[],mode:'manual',ov:o.ov||null,v:2,zm:o.matter||'',target:o.target||'',sex:o.sex||'',thing:o.thing||'',bg:o.bg||'',qf:o.form||'',oa:o.oa||'',ob:o.ob||''};showResult(rec,true);return {ai:aiText(),pan:panText()};},resultText:function(){return resultText()},briefText:function(){return briefText()},fullText:function(){return resultText()},analysis:function(){return state.viewing&&state.viewing.zs},zhengAnalysis:function(){return state.viewing&&state.viewing.zan},current:function(){return state.viewing&&state.viewing.rec},storageOK:function(){try{window.localStorage.setItem('__t','1');window.localStorage.removeItem('__t');return true}catch(e){return false}}};
+window.LiuyaoApp={version:'V5.1',hanzi:function(s){return hanzi(s)},_S:function(x){return BH.S(x)},aiText:function(){return aiText()},panText:function(){return panText()},researchText:function(){return researchText()},baihua:function(){var v=state.viewing;return v?BH.plain(v.r,v.zs,metaOf(v.rec,v.qt)):null},qtype:function(){var v=state.viewing;return v?v.qt:qtUI()},termInfo:function(k){var v=state.viewing;return BH.term(k,v&&v.r,v&&v.zs,v&&v.qt)},preview:function(values,time,o){o=o||{};state.fromHist=null;var rec={id:0,q:o.q||'',time:time,zi:o.zi||'0',values:values,coins:[],mode:'manual',ov:o.ov||null,v:2,zm:o.matter||'',target:o.target||'',sex:o.sex||'',thing:o.thing||'',bg:o.bg||'',qf:o.form||'',oa:o.oa||'',ob:o.ob||''};showResult(rec,true);return {ai:aiText(),pan:panText()};},resultText:function(){return resultText()},briefText:function(){return briefText()},fullText:function(){return resultText()},analysis:function(){return state.viewing&&state.viewing.zs},zhengAnalysis:function(){return state.viewing&&state.viewing.zan},current:function(){return state.viewing&&state.viewing.rec},storageOK:function(){try{window.localStorage.setItem('__t','1');window.localStorage.removeItem('__t');return true}catch(e){return false}}};
 fillSelects();renderSettings();matterUI();
 $('tm').value=nowLocal();renderPillars();setMode('auto');renderLines();renderHist();
 })();
