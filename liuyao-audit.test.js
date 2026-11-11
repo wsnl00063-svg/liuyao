@@ -242,7 +242,7 @@ function chart(r, q, extra) {
 }
 var cA = chart(rA, '我女朋友的新工作能不能稳定下来？');
 assert(cA.indexOf('【所问】我女朋友的新工作能不能稳定下来？') >= 0, '所问原文');
-assert(cA.indexOf('【对象】以原问题为准\n') >= 0, '未指定对象不写成本人或涉及他人\n' + cA.split('\n')[1]);
+assert(cA.indexOf('【对象】') < 0, '卦盘不再单列对象，替他人占问写在所问里');
 assert(cA.indexOf('丙午年 己亥月 戊子日 癸亥时') >= 0 && cA.indexOf('旬空午未') >= 0 && cA.indexOf('0点换日') >= 0, '时间行');
 assert(cA.indexOf('地火明夷之地天泰') >= 0 && cA.indexOf('坎宫水（游魂卦，变卦坤宫三世）') >= 0, '卦象宫');
 assert(cA.indexOf('世四爻 应初爻') >= 0 && cA.indexOf('动爻：二') >= 0, '世应动爻');
@@ -254,7 +254,7 @@ assert(yaoOrder.join('') === '上爻五爻四爻三爻二爻初爻', '六爻自�
 
 var cB = chart(rB, '买五菱宏光MINI还是奔腾小马？');
 assert(cB.indexOf('【所问】买五菱宏光MINI还是奔腾小马？') >= 0, 'B 所问原文');
-assert(cB.indexOf('【对象】以原问题为准') >= 0 && cB.indexOf('本人') < 0, '买车题不写成本人');
+assert(cB.indexOf('【对象】') < 0 && cB.indexOf('本人') < 0, '买车题不写对象行、也不写成本人');
 assert(cB.indexOf('天雷无妄之天泽履') >= 0 && cB.indexOf('巽宫木（四世卦，变卦艮宫五世）') >= 0, 'B 卦象');
 assert(cB.indexOf('二爻 螣蛇 兄弟 庚寅木 阴动 → 化兄弟 丁卯木') >= 0, 'B 二爻复制');
 assert(cB.indexOf('【伏神】无') >= 0, 'B 无伏神要写明');
@@ -262,7 +262,7 @@ assert(cB.indexOf('化进') < 0 && cB.indexOf('进神') < 0, 'B 复制不含化�
 
 var cQ = chart(rQ, '这工作能不能稳定？');
 assert(cQ.indexOf('（六爻安静）') >= 0 && cQ.indexOf('动爻：无') >= 0 && cQ.indexOf('【伏神】无') >= 0, '静卦复制');
-assert(cQ.indexOf('【对象】以原问题为准') >= 0, '工作题对象不定');
+assert(cQ.indexOf('【对象】') < 0, '工作题不单列对象');
 
 var cM = chart(rM, '其他方案行不行？');
 assert(cM.indexOf('涉及他人') < 0 && cM.indexOf('本人') < 0, '“其他”不误判成他人或本人');
@@ -278,7 +278,13 @@ assert(BH.objLine(qtHelp) === '以原问题为准', '“帮我问”不写成代
 // 背景原文、六步指令仍在，且不把吉凶写死在卦盘上
 var ai = BH.aiText(rA, null, { q: '测试问题原文', bg: '补充：不是我自己', time: '2026-11-10 22:49', qt: BH.qtype({ q: '测试问题原文' }) });
 assert(ai.indexOf('【所问】测试问题原文') >= 0 && ai.indexOf('【背景】补充：不是我自己') >= 0, '背景原文');
-assert(ai.indexOf('审题取用') >= 0 && ai.indexOf('动变') >= 0 && ai.indexOf('【找病】') >= 0 && ai.indexOf('【找药】') >= 0 && ai.indexOf('【反证】') >= 0, '六步指令仍要求自行取用、看动变、权衡反证');
+assert(ai.indexOf('【对象】') < 0, '默认复制不含对象');
+assert(ai.indexOf(BH.ZHILING) >= 0 && ai.indexOf('【取用】') >= 0 && ai.indexOf('【断曰】') >= 0, '默认指令为增删次序');
+assert(ai.indexOf('【断势】') < 0 && ai.indexOf('【找病】') < 0 && ai.indexOf('【反证】') < 0, '默认复制不含六段式');
+var liu = BH.liuduanText(rA, null, { q: '测试问题原文', bg: '补充：不是我自己', time: '2026-11-10 22:49', qt: BH.qtype({ q: '测试问题原文' }) });
+assert(liu.indexOf('【断势】') >= 0 && liu.indexOf('【找病】') >= 0 && liu.indexOf('【找药】') >= 0 && liu.indexOf('【转势】') >= 0 && liu.indexOf('【进退】') >= 0 && liu.indexOf('【反证】') >= 0, '六段式正文仍在');
+assert(liu.indexOf('全文分清卦理') < 0, '六段式不含已删末段');
+assert(liu.indexOf('【对象】') < 0, '六段式不含对象');
 var chartPart = ai.split('【断卦指令】')[0];
 assert(chartPart.indexOf('吉') < 0 && chartPart.indexOf('凶') < 0, '卦盘部分不预设吉凶');
 

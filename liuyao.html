@@ -75,9 +75,16 @@ table.zg .mk{display:inline-block;width:1.1em;margin-left:2px}
 .text{background:var(--soft);border-radius:10px;padding:10px 12px;margin:6px 0;font-size:15px}
 .text.main{border-left:4px solid var(--accent)}
 .text small{color:var(--muted)}
-.hist-item{border-bottom:1px solid var(--line);padding:8px 0;display:flex;gap:8px;align-items:center}
-.hist-item .t{flex:1;min-width:0;font-size:14px}
+.hist-item{border-bottom:1px solid var(--line);padding:8px 0;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.hist-item .t{flex:1 1 160px;min-width:0;font-size:14px}
 .hist-item .t div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-item .acts{display:flex;flex-wrap:wrap;gap:6px;flex:0 0 auto}
+.hist-tools{margin-top:8px}
+.hist-tools button.small{flex:1 1 calc(50% - 8px)}
+.ysbox{flex:1 1 100%;border:1px dashed var(--line);border-radius:10px;padding:4px 10px 8px;margin-top:2px}
+.ysbox summary{font-size:14px;color:var(--fg)}
+.ysbox textarea{min-height:72px}
+.ysbox button.small{margin-top:6px}
 .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--btn);color:var(--btnfg);padding:10px 18px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
 .toast.on{opacity:.95}
 .hide{display:none!important}
@@ -134,6 +141,7 @@ u.tm{text-decoration:none;border-bottom:1px dotted var(--accent2);cursor:pointer
 .copybar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .copybar button{flex:1 1 30%}
 .copybar button.primary{flex:1 1 100%;font-size:17px}
+@media (max-width:520px){.aibox .copybar button{flex:1 1 100%}}
 #manualTa{min-height:180px;font-size:13px}
 .glist .tmc{display:inline-block;margin:3px 4px 3px 0;padding:2px 8px;border:1px solid var(--line);border-radius:14px;font-size:13.5px;cursor:pointer;background:var(--card)}
 .glist .tmc.on{border-color:var(--accent2);color:var(--accent2)}
@@ -167,7 +175,7 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
 <body>
 <div class="wrap">
 <h1>铜钱法 · 六爻起卦</h1>
-<div class="note"><b>V5.1</b>：写下所问之事 → 摇卦 → 看卦盘 → 点「一键复制」交给任意熟悉《增删卜易》的 AI。指令要求 AI 按六步作答：断势、找病、找药、转势、进退、反证，帮你知势、借势、转势。程序只负责把卦排准，不替你定用神、不断吉凶。离线可用，数据只存在本机浏览器。</div>
+<div class="note"><b>V5.1</b>：写下所问之事 → 摇卦 → 看卦盘 → 点「一键复制」交给任意熟悉《增删卜易》的 AI。默认按取用、断卦、断曰的次序，依原文及卦例审题。另可「复制六段式」（断势、找病、找药、转势、进退、反证）。程序只负责把卦排准，不替你定用神、不断吉凶。离线可用，数据只存在本机浏览器。</div>
 
 <div class="card">
   <h2>一、所问之事</h2>
@@ -230,7 +238,14 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
 </div>
 
 <div class="card">
-  <div class="row"><h2 style="margin:0">历史记录（最近 50 条）</h2><button class="small" id="clearHist" style="flex:0 0 auto">清空</button></div>
+  <div class="row"><h2 style="margin:0">历史记录（最近 50 条）</h2></div>
+  <div class="row hist-tools">
+    <button type="button" class="small" id="exportJson">导出卦例</button>
+    <button type="button" class="small" id="exportTxt">导出文本</button>
+    <button type="button" class="small" id="importJson">导入卦例</button>
+    <button type="button" class="small" id="clearHist">清空</button>
+  </div>
+  <input type="file" id="importFile" accept="application/json,.json" class="hide">
   <div id="hist"></div>
 </div>
 <div class="note">说明：月柱按“节”精确时刻交换（立春换年），节气表由 lunar-python 预先算好嵌入，支持 2000–2060 年；日柱用儒略日推算。六亲以本宫五行为“我”；六神按日干起；伏神取本宫八纯卦同爻位纳甲（两书取法差异见伏神栏小字与判断辅助）。判断辅助的规则与原文摘自《增删卜易》《卜筮正宗》，每条可点开核对底本行号。变占提示依朱熹《易学启蒙》“考变占”通则，仅供参考。</div>
@@ -2029,8 +2044,11 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     (qt.unc || []).forEach(function (x) { a.push(x); });
     return a.length ? a : ['无（主用神与问题类型均已由问卦人确认）'];
   }
-  // ================= V5.0 精简断卦包 / V5.1 六步断卦指令（断势→找病→找药→转势→进退→反证） =================
-  var ZHILING = [
+  // ================= V5.0 精简断卦包 / V5.1 断卦指令 =================
+  // 默认一键复制、手动复制共用 ZHILING（依《增删卜易》取用、断卦、断曰）。
+  var ZHILING = '请依《增删卜易》原文及卦例审题取用，详察日月旺衰、动变生克、原忌仇神及世应关系，抓住主象断吉凶。不得以卦名、六神或单一吉凶规则代替全卦判断；疑义如实指出，有应期依据才论应期。按以下次序作答：【取用】占什么，为什么取这一爻；【断卦】日月、动变、世应如何作用，最重要的卦理是什么；【断曰】按传统规则得出什么倾向，理由及不确定性。';
+  // 六段式另由「复制六段式」使用。开头取用说明与六段正文保持原句；此前已删的末段不再加回。
+  var ZHILING_LIUDUAN = [
     "请严格依《增删卜易》审题取用，综合日月旺衰、原忌仇神、动变生克、空破冲合、世应，帮问卦人知势、借势、转势。六亲所指按本问而定，不套固定含义（如父母不必是文件、官鬼不必是阻碍）。先用一句话写明取用（哪一爻为用神、为何），再按以下六段作答：",
     "【断势】先答所问，一句话定偏成、偏败或暂难断，不含糊也不硬断。",
     "【找病】最要紧的1—2个不利因素：哪一爻、何种生克、为何成阻。",
@@ -2039,8 +2057,8 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     "【进退】具备哪些现实条件可推进，缺哪些应暂缓；应期有卦理才报，不编日期时辰，不与现实条件混同。",
     "【反证】最强的相反卦理，及需现实核实的不确定因素。"
   ].join('\n');
-  // 【对象】只采用问卦人在高级设置里选定的对象。未选时不把“我起的卦”写成“问自己”，
-  // 也不从问句推断第三人（“其他”里的“他”、“帮我问”都不是已确认的对象），交给断卦者按原文判断。
+  // 【对象】仍只供页面上的程序识别提示，不写入复制用卦盘。替他人占问写在【所问】里。
+  // 未选时不把“我起的卦”写成“问自己”，也不从问句推断第三人。
   function objLine(qt) {
     qt = qt || {};
     if (qt.userSet && qt.userSet.target && qt.target) return qt.target === 'self' ? '本人' : '他人：' + (qt.rel || qt.who) + '（问卦人指定）';
@@ -2062,7 +2080,6 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     var t = [], B = r.ben, V = r.bian, bp = bianPal(r);
     t.push('【所问】' + (meta.q || '（未填写）'));
     if (meta.bg) t.push('【背景】' + meta.bg);
-    t.push('【对象】' + objLine(qt, meta));
     t.push('【时间】' + timeLine(r, meta));
     t.push('【卦象】' + S(B.fullName) + (V ? '之' + S(V.fullName) : '（六爻安静）') + '｜本宫：' + S(r.palace.palace) + '宫' + r.palace.wx + '（' + S(r.palace.stage) + '卦' + (V && bp ? '，变卦' + S(bp.palace) + '宫' + S(bp.stage) : '') + '）｜世' + POS[siOf(r)] + '爻 应' + POS[yiOf(r)] + '爻｜动爻：' + (r.moving.length ? r.moving.map(function (i) { return POS[i]; }).join('、') : '无'));
     t.push('【六爻】上→初（六神 六亲 纳甲 阴阳动静 世应；动爻化出按本宫论六亲）');
@@ -2072,15 +2089,32 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     return t;
   }
   function userYong(zs) { var Y = (zs && zs.yong) || {}; if (Y.status !== 'confirmed' || !Y.primary) return ''; var P0 = Y.primary; return S(P0.qin) + (P0.k === '世' || P0.k === '應' ? '（' + S(P0.via) + '）' : '') + (P0.role ? '＝' + P0.role : ''); }
-  function aiText(r, zs, meta) {
+  function yanshiLines(ys) {
+    if (!ys || typeof ys !== 'object') return [];
+    var result = ys.result != null ? String(ys.result) : '';
+    var conclusion = ys.conclusion ? String(ys.conclusion) : '';
+    var reason = ys.reason ? String(ys.reason) : '';
+    if (!result && !conclusion && !reason) return [];
+    var t = ['【验事】', '结果：' + result, '结论：' + conclusion];
+    if (reason) t.push('原因：' + reason);
+    return t;
+  }
+  function withYanshi(lines, meta) {
+    var extra = yanshiLines(meta && meta.yanshi);
+    return extra.length ? lines.concat(extra) : lines;
+  }
+  function packText(r, zs, meta, zhiling) {
     meta = meta || {}; var qt = meta.qt || qtype({ q: meta.q }), t = chartLines(r, meta, qt), uy = userYong(zs);
     if (uy) t.push('【问卦人指定用神】' + uy);
-    t.push('【断卦指令】' + ZHILING);
+    t = withYanshi(t, meta);
+    if (zhiling) t.push('【断卦指令】' + zhiling);
     return t.join('\n');
   }
+  function aiText(r, zs, meta) { return packText(r, zs, meta, ZHILING); }
+  function liuduanText(r, zs, meta) { return packText(r, zs, meta, ZHILING_LIUDUAN); }
   function panText(r, zs, meta) {
     meta = meta || {}; var qt = meta.qt || qtype({ q: meta.q });
-    return chartLines(r, meta, qt).join('\n');
+    return withYanshi(chartLines(r, meta, qt), meta).join('\n');
   }
   // 研究版保留 V4.1 的详细数据（不进入默认一键复制）
   function detailLines(r, zs, meta, qt) {
@@ -2108,9 +2142,11 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     t.push('', full);
     t.push('', '〔术语释义（本卦）〕'); t = t.concat(glossText(r, zs, qt));
     t.push('', '〔用神确认与修改记录〕'); t = t.concat(revLines(meta));
+    var ys = yanshiLines(meta.yanshi);
+    if (ys.length) { t.push(''); t = t.concat(ys); }
     return t.join('\n');
   }
-  return { VER: VER, ZHILING: ZHILING, chartLines: chartLines, objLine: objLine, FORMS: FORMS, auditLines: auditLines, pendLines: pendLines, QN: QN, qtype: qtype, detectForm: detectForm, options: options, plain: plain, TERMS: TERMS, term: term, termify: termify, aiText: aiText, panText: panText, researchText: researchText, glossText: glossText, tableLines: tableLines, S: S };
+  return { VER: VER, ZHILING: ZHILING, ZHILING_LIUDUAN: ZHILING_LIUDUAN, chartLines: chartLines, objLine: objLine, FORMS: FORMS, auditLines: auditLines, pendLines: pendLines, QN: QN, qtype: qtype, detectForm: detectForm, options: options, plain: plain, TERMS: TERMS, term: term, termify: termify, aiText: aiText, liuduanText: liuduanText, panText: panText, researchText: researchText, glossText: glossText, tableLines: tableLines, yanshiLines: yanshiLines, S: S };
 });
 </script>
 <script>
@@ -2215,9 +2251,9 @@ function showResult(rec,noScroll){
   // ── 第二层：一键复制 ──
   var ai=aiText();
   h+='<div class="aibox" id="aiBox"><div class="copybar"><button class="primary" id="copyAI">一键复制（交给 AI 断卦）</button></div>';
-  h+='<div class="meta">内容：所问、对象、时间、卦象、六爻、伏神和六步断卦指令，共 '+hanzi(ai)+' 个汉字。</div>';
+  h+='<div class="meta">内容：所问、时间、卦象、六爻、伏神和《增删卜易》断卦次序，共 '+hanzi(ai)+' 个汉字。已填验事时附在卦盘末尾。</div>';
   h+='<details id="aiPrev"><summary>查看将复制的内容</summary><pre class="aipre" id="aiPre">'+esc(ai)+'</pre></details>';
-  h+='<div class="copybar"><button id="copyPan">复制纯卦盘</button><button id="showAI">手动复制</button></div>';
+  h+='<div class="copybar"><button id="copyLiu">复制六段式</button><button id="copyPan">复制纯卦盘</button><button id="showAI">手动复制</button></div>';
   h+='<div id="manualBox" class="hide"><div class="meta">自动复制不可用时：下面文字已全选，长按或 Ctrl+C 复制。</div><textarea id="manualTa" readonly></textarea></div></div>';
   // ── 第三层：专业研究盘（默认折叠）──
   h+='<details class="pro" id="proBox"'+(keepPro?' open':'')+'><summary>专业研究盘（白话速读、审题、用神确认、装卦明细、《增删卜易》判断辅助、术语释义；默认折叠）</summary>';
@@ -2290,9 +2326,10 @@ function openTerm(k){var v=state.viewing,x=BH.term(k,v&&v.r,v&&v.zs,v&&v.qt);if(
   h+='<h3>出处</h3>'+(x.src.length?x.src.map(function(q){return '<div class="q">'+(q.l?'「'+esc(q.t)+'」<div class="src">《增删卜易》'+esc(q.ch)+'　底本行 '+q.l+'　<span class="ty '+q.ty+'">'+TN[q.ty]+'</span>'+(q.id?'<span class="zr" data-z="'+q.id+'">'+q.id+'</span>':'')+'</div>':esc(q.t)+'<div class="src"><span class="ty P">程序归纳</span>'+(q.id?'<span class="zr" data-z="'+q.id+'">'+q.id+'</span>':'')+'</div>')+'</div>'}).join(''):'<div class="meta">通行释义，原书无逐字定义。</div>');
   h+='<div class="meta">底本：《增删卜易》研易论道简体本，逐字核对；未核对的不引用。</div>';
   var sh=$('sheet');sh.innerHTML=h;sh.classList.remove('hide');$('sheetX').onclick=function(){sh.classList.add('hide')};}
-function metaOf(rec,qt){var t=parseT(rec.time);return {q:rec.q||'',bg:rec.bg||'',sex:rec.sex||'',time:t?tStr(t):'',zi23:rec.zi==='1',manualP:!!rec.ov,qt:qt||qtOf(rec),revs:(rec.revs||[]).map(function(v){return {at:locT(v.at),why:v.why,yong:v.yong}}),history:state.fromHist||''};}
+function metaOf(rec,qt){var t=parseT(rec.time);return {q:rec.q||'',bg:rec.bg||'',sex:rec.sex||'',time:t?tStr(t):'',zi23:rec.zi==='1',manualP:!!rec.ov,qt:qt||qtOf(rec),revs:(rec.revs||[]).map(function(v){return {at:locT(v.at),why:v.why,yong:v.yong}}),history:state.fromHist||'',yanshi:rec.yanshi||null};}
 function locT(iso){var d=new Date(iso);if(isNaN(d))return String(iso||'');d=bj(d);return d.getUTCFullYear()+'-'+C.pad(d.getUTCMonth()+1)+'-'+C.pad(d.getUTCDate())+' '+C.pad(d.getUTCHours())+':'+C.pad(d.getUTCMinutes());}
 function aiText(){var v=state.viewing;if(!v)return'';return BH.aiText(v.r,v.zs,metaOf(v.rec,qtOf(v.rec)));}
+function liuduanText(){var v=state.viewing;if(!v)return'';return BH.liuduanText(v.r,v.zs,metaOf(v.rec,qtOf(v.rec)));}
 function panText(){var v=state.viewing;if(!v)return'';return BH.panText(v.r,v.zs,metaOf(v.rec,qtOf(v.rec)));}
 function researchText(){var v=state.viewing;if(!v)return'';return BH.researchText(v.r,v.zs,metaOf(v.rec,qtOf(v.rec)),zsText(true));}
 function showManual(s){var b=$('manualBox'),ta=$('manualTa');if(!b||!ta)return;ta.value=s;b.classList.remove('hide');try{ta.focus();ta.select();ta.setSelectionRange(0,s.length);}catch(e){}}
@@ -2412,6 +2449,7 @@ function openZ(id){var R=RZS[id];if(!R)return;var TN={Y:'原文明确规定',H:'
 document.addEventListener('click',function(e){var tm=e.target.closest('.tm,.tmc,.tag[data-t]');if(tm&&tm.dataset.t&&!e.target.closest('#sheet')){openTerm(tm.dataset.t);return;}var z=e.target.closest('.zr');if(z&&z.dataset.z){openZ(z.dataset.z);return;}var t=e.target.closest('.tg');if(t&&t.dataset.r){openSheet(t.dataset.r,t.dataset.d);return;}var sh=$('sheet');if(!sh.classList.contains('hide')&&!e.target.closest('#sheet'))sh.classList.add('hide');});
 $('result').addEventListener('click',function(e){var b=e.target.closest('button');if(!b||!state.viewing)return;var rec=state.viewing.rec,res=state.viewing.zs;
   if(b.id==='copyAI'){copyText(aiText());return;}
+  if(b.id==='copyLiu'){copyText(liuduanText());return;}
   if(b.id==='copyPan'){copyText(panText());return;}
   if(b.id==='copyFull'){copyText(researchText());return;}
   if(b.id==='showAI'){showManual(aiText());return;}
@@ -2451,17 +2489,141 @@ function loadHist(){try{return JSON.parse(lsGet(HKEY)||'[]')}catch(e){return[]}}
 function storeHist(a){lsSet(HKEY,JSON.stringify(a.slice(0,50)));}
 function updHist(rec){var a=loadHist();a.forEach(function(x,i){if(x.id===rec.id)a[i]=rec});storeHist(a);}
 function saveHist(rec){var a=loadHist();a.unshift(rec);storeHist(a);renderHist();}
+var ysOpen=null;
+var YS_CONC=['应验','部分应验','未应验','未明'];
+var YS_REASON=['取用错误','规则运用错误','卦象无可靠判断','其他'];
+function ysNeedsReason(c){return c==='未应验'||c==='部分应验';}
+function ysHTML(rec){
+  var ys=rec.yanshi||{},conc=ys.conclusion||'',show=ysNeedsReason(conc);
+  var opts=YS_CONC.map(function(x){return '<option value="'+x+'"'+(conc===x?' selected':'')+'>'+x+'</option>'}).join('');
+  var reasons=['<option value="">失误原因（可选）</option>'].concat(YS_REASON.map(function(x){return '<option value="'+x+'"'+((ys.reason||'')===x?' selected':'')+'>'+x+'</option>'})).join('');
+  return '<details class="ysbox" data-ysid="'+esc(rec.id)+'"'+(String(ysOpen)===String(rec.id)?' open':'')+'><summary>'+(conc?'验事（'+esc(conc)+'）':'验事')+'</summary>'
+    +'<label>实际结果</label><textarea class="ys-result" placeholder="事后实际发生了什么">'+esc(ys.result||'')+'</textarea>'
+    +'<label>结论</label><select class="ys-conc"><option value="">请选择</option>'+opts+'</select>'
+    +'<div class="ys-reason-row'+(show?'':' hide')+'"><label>失误原因（仅未应验或部分应验）</label><select class="ys-reason">'+reasons+'</select></div>'
+    +'<div class="meta">'+(ys.at?'填写日期：'+esc(locT(ys.at)):'保存时自动记下填写日期')+'</div>'
+    +'<button type="button" class="small" data-ys-save="'+esc(rec.id)+'">保存验事</button></details>';
+}
 function renderHist(){
   var a=loadHist(),el=$('hist');
   if(!a.length){el.innerHTML='<div class="meta">暂无记录</div>';return;}
   el.innerHTML=a.map(function(rec){var r;try{r=C.build(rec.values,null)}catch(e){return''}
-    return '<div class="hist-item"><div class="t"><div><b>'+r.ben.name+(r.bian?' → '+r.bian.name:'')+'</b>　<small>'+esc(rec.time.replace('T',' ').slice(0,16))+'</small></div><div class="meta" style="margin:0">'+esc(rec.q||'（未填所问）')+((rec.outcomes||[]).length?'　<small>｜结果：'+esc(rec.outcomes[rec.outcomes.length-1].text.slice(0,30))+'</small>':'')+'</div></div><button class="small" data-view="'+rec.id+'">查看</button><button class="small" data-del="'+rec.id+'">删除</button></div>'}).join('');
+    var when=esc(String(rec.time||'').replace('T',' ').slice(0,16));
+    return '<div class="hist-item"><div class="t"><div><b>'+r.ben.name+(r.bian?' → '+r.bian.name:'')+'</b>　<small>'+when+'</small></div><div class="meta" style="margin:0">'+esc(rec.q||'（未填所问）')+((rec.outcomes||[]).length?'　<small>｜结果：'+esc(rec.outcomes[rec.outcomes.length-1].text.slice(0,30))+'</small>':'')+'</div></div><div class="acts"><button type="button" class="small" data-view="'+esc(rec.id)+'">查看</button><button type="button" class="small" data-del="'+esc(rec.id)+'">删除</button></div>'+ysHTML(rec)+'</div>'}).join('');
+}
+function findHist(id){var hit=null;loadHist().forEach(function(x){if(String(x.id)===String(id))hit=x});return hit;}
+function ysBox(id){var nodes=document.querySelectorAll('.ysbox'),i,want=String(id);for(i=0;i<nodes.length;i++){if(nodes[i].getAttribute('data-ysid')===want)return nodes[i];}return null;}
+function saveYanshi(id){
+  var box=ysBox(id);
+  if(!box)return;
+  var result=box.querySelector('.ys-result').value.replace(/^\s+|\s+$/g,'');
+  var conclusion=box.querySelector('.ys-conc').value;
+  var reason='';
+  if(ysNeedsReason(conclusion))reason=box.querySelector('.ys-reason').value;
+  if(!conclusion){toast('请选择结论');return;}
+  if(YS_CONC.indexOf(conclusion)<0){toast('结论无法识别');return;}
+  if(reason&&YS_REASON.indexOf(reason)<0){toast('失误原因无法识别');return;}
+  var rec=findHist(id);if(!rec){toast('找不到这条记录');return;}
+  rec.yanshi={result:result,conclusion:conclusion,reason:reason,at:new Date().toISOString()};
+  updHist(rec);
+  if(state.viewing&&String(state.viewing.rec.id)===String(id)){state.viewing.rec.yanshi=rec.yanshi;showResult(state.viewing.rec,true);}
+  ysOpen=id;renderHist();toast('验事已保存');
 }
 $('hist').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var a=loadHist();
+  if(b.dataset.ysSave){saveYanshi(b.dataset.ysSave);return;}
   if(b.dataset.view){var rec=a.filter(function(x){return String(x.id)===b.dataset.view})[0];if(rec){var o=recOpts(rec);$('matter').value=o.matter||'';$('target').value=o.target||'';$('sex').value=o.sex||'';$('thing').value=o.thing||'';$('q').value=rec.q||'';$('bg').value=rec.bg||'';$('qform').value=rec.qf||'';$('optA').value=rec.oa||'';$('optB').value=rec.ob||'';$('tm').value=rec.time||'';$('zi').value=rec.zi==='1'?'1':'0';$('ovM').value=rec.ov&&rec.ov.month||'';$('ovD').value=rec.ov&&rec.ov.day||'';$('ovBox').open=!!rec.ov;state.timeEdited=true;renderPillars();state.fromHist=locT(rec.snap&&rec.snap.at||new Date(rec.id).toISOString());matterUI();sugUI();showResult(rec);}}
   if(b.dataset.del){if(!confirm('删除这条记录？'))return;storeHist(a.filter(function(x){return String(x.id)!==b.dataset.del}));renderHist();}
 });
+$('hist').addEventListener('change',function(e){var s=e.target;if(!s.classList||!s.classList.contains('ys-conc'))return;var box=s.closest('.ysbox');if(!box)return;var row=box.querySelector('.ys-reason-row');if(row)row.classList.toggle('hide',!ysNeedsReason(s.value));});
 $('clearHist').onclick=function(){if(confirm('清空全部历史记录？')){storeHist([]);renderHist();}};
+function dayStamp(){return nowLocal().slice(0,10);}
+function downloadText(name,text,mime){
+  var blob=new Blob([text],{type:mime||'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1500);
+}
+function panTextOf(rec,withYs){
+  try{
+    var t=parseT(rec.time);if(!t||!rec.values)return'';
+    var o={ziSwitch23:rec.zi==='1',override:rec.ov||null};
+    var r=C.build(rec.values,t,o);
+    var zs=Z.analyze(r,(function(op){op.date=t;return op})(recOpts(rec)));
+    var meta={q:rec.q||'',bg:rec.bg||'',sex:rec.sex||'',time:tStr(t),zi23:rec.zi==='1',manualP:!!rec.ov,qt:qtOf(rec),yanshi:withYs?(rec.yanshi||null):null};
+    return BH.panText(r,zs,meta);
+  }catch(e){return'';}
+}
+function exportRecords(){
+  return loadHist().map(function(rec){
+    var o=JSON.parse(JSON.stringify(rec));
+    o.panText=panTextOf(rec,true);
+    return o;
+  });
+}
+function ysAt(ys){if(!ys||!ys.at)return 0;var n=Date.parse(ys.at);return isNaN(n)?0:n;}
+function ysSame(a,b){a=a||{};b=b||{};return String(a.result||'')===String(b.result||'')&&String(a.conclusion||'')===String(b.conclusion||'')&&String(a.reason||'')===String(b.reason||'');}
+function ysHas(ys){return !!(ys&&(String(ys.result||'').trim()||ys.conclusion||ys.reason));}
+$('exportJson').onclick=function(){
+  var records=exportRecords();
+  var payload={app:'liuyao',version:'V5.1',exportedAt:new Date().toISOString(),records:records};
+  downloadText('卦例-'+dayStamp()+'.json',JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+  toast('已导出 '+records.length+' 条卦例');
+};
+function txtOf(rec,n){
+  var t=parseT(rec.time),lines=['—— 卦例 '+n+' ——','时间：'+(t?tStr(t):String(rec.time||'')),'所问：'+(rec.q||'（未填写）'),'卦盘：',panTextOf(rec,false)||'（无法排盘）','验事：'];
+  if(ysHas(rec.yanshi)){
+    lines.push('结果：'+(rec.yanshi.result||''));
+    lines.push('结论：'+(rec.yanshi.conclusion||''));
+    lines.push('原因：'+(rec.yanshi.reason||''));
+    lines.push('填写日期：'+(rec.yanshi.at?locT(rec.yanshi.at):''));
+  }else lines.push('无');
+  return lines.join('\n');
+}
+$('exportTxt').onclick=function(){
+  var a=loadHist();
+  var body=a.length?a.map(function(rec,i){return txtOf(rec,i+1)}).join('\n\n'):'（暂无历史记录）';
+  downloadText('卦例-'+dayStamp()+'.txt','\uFEFF'+body+'\n','text/plain;charset=utf-8');
+  toast('已导出文本 '+a.length+' 条');
+};
+function cleanImport(raw){
+  var o=JSON.parse(JSON.stringify(raw));
+  delete o.panText;
+  return o;
+}
+function mergeImport(text){
+  var data;try{data=JSON.parse(String(text||'').replace(/^\uFEFF/,''))}catch(e){toast('导入失败：不是有效的 JSON');return;}
+  var incoming=Array.isArray(data)?data:(data&&data.records);
+  if(!Array.isArray(incoming)){toast('导入失败：找不到卦例记录');return;}
+  var map={};loadHist().forEach(function(r){if(r&&r.id!=null)map[String(r.id)]=r});
+  var added=0,updated=0,skipped=0,conflicts=[];
+  incoming.forEach(function(raw){
+    if(!raw||raw.id==null||!Array.isArray(raw.values)||raw.values.length!==6){skipped++;return;}
+    var id=String(raw.id),rec=cleanImport(raw),cur=map[id];
+    if(!cur){map[id]=rec;added++;return;}
+    var imp=rec.yanshi;
+    if(!ysHas(imp))return;
+    var loc=cur.yanshi;
+    if(!ysHas(loc)||ysAt(imp)>ysAt(loc)){cur.yanshi=imp;updated++;return;}
+    if(ysSame(loc,imp))return;
+    if(ysAt(loc)>ysAt(imp))conflicts.push({cur:cur,imp:imp});
+  });
+  if(conflicts.length){
+    var ok=confirm('有 '+conflicts.length+' 条本机验事比导入文件更新。确定要用文件中较旧的验事覆盖本机吗？\n取消则保留本机较新的验事，其余记录仍会合并。');
+    if(ok)conflicts.forEach(function(c){c.cur.yanshi=c.imp;updated++;});
+  }
+  var arr=Object.keys(map).map(function(k){return map[k]});
+  arr.sort(function(a,b){return (Number(b.id)||0)-(Number(a.id)||0)});
+  storeHist(arr);renderHist();
+  toast('已合并：新增 '+added+'，更新验事 '+updated+(skipped?'，跳过 '+skipped:''));
+}
+$('importJson').onclick=function(){$('importFile').value='';$('importFile').click();};
+$('importFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(){mergeImport(String(reader.result||''));};
+  reader.onerror=function(){toast('读取文件失败');};
+  reader.readAsText(f);
+});
 
 // 事件
 function setMode(m){state.mode=m;$('tabAuto').classList.toggle('on',m==='auto');$('tabManual').classList.toggle('on',m==='manual');$('autoPane').classList.toggle('hide',m!=='auto');$('manualPane').classList.toggle('hide',m!=='manual');
@@ -2482,7 +2644,7 @@ $('tm').addEventListener('input',function(){state.timeEdited=true;renderPillars(
 $('nowBtn').onclick=function(){$('tm').value=nowLocal();state.timeEdited=true;renderPillars()};
 $('zi').onchange=renderPillars;
 
-window.LiuyaoApp={version:'V5.1',hanzi:function(s){return hanzi(s)},_S:function(x){return BH.S(x)},aiText:function(){return aiText()},panText:function(){return panText()},researchText:function(){return researchText()},baihua:function(){var v=state.viewing;return v?BH.plain(v.r,v.zs,metaOf(v.rec,v.qt)):null},qtype:function(){var v=state.viewing;return v?v.qt:qtUI()},termInfo:function(k){var v=state.viewing;return BH.term(k,v&&v.r,v&&v.zs,v&&v.qt)},preview:function(values,time,o){o=o||{};state.fromHist=null;var rec={id:0,q:o.q||'',time:time,zi:o.zi||'0',values:values,coins:[],mode:'manual',ov:o.ov||null,v:2,zm:o.matter||'',target:o.target||'',sex:o.sex||'',thing:o.thing||'',bg:o.bg||'',qf:o.form||'',oa:o.oa||'',ob:o.ob||''};showResult(rec,true);return {ai:aiText(),pan:panText()};},resultText:function(){return resultText()},briefText:function(){return briefText()},fullText:function(){return resultText()},analysis:function(){return state.viewing&&state.viewing.zs},zhengAnalysis:function(){return state.viewing&&state.viewing.zan},current:function(){return state.viewing&&state.viewing.rec},storageOK:function(){try{window.localStorage.setItem('__t','1');window.localStorage.removeItem('__t');return true}catch(e){return false}}};
+window.LiuyaoApp={version:'V5.1',hanzi:function(s){return hanzi(s)},_S:function(x){return BH.S(x)},aiText:function(){return aiText()},liuduanText:function(){return liuduanText()},panText:function(){return panText()},researchText:function(){return researchText()},baihua:function(){var v=state.viewing;return v?BH.plain(v.r,v.zs,metaOf(v.rec,v.qt)):null},qtype:function(){var v=state.viewing;return v?v.qt:qtUI()},termInfo:function(k){var v=state.viewing;return BH.term(k,v&&v.r,v&&v.zs,v&&v.qt)},preview:function(values,time,o){o=o||{};state.fromHist=null;var rec={id:0,q:o.q||'',time:time,zi:o.zi||'0',values:values,coins:[],mode:'manual',ov:o.ov||null,v:2,zm:o.matter||'',target:o.target||'',sex:o.sex||'',thing:o.thing||'',bg:o.bg||'',qf:o.form||'',oa:o.oa||'',ob:o.ob||''};if(o.yanshi)rec.yanshi=o.yanshi;showResult(rec,true);return {ai:aiText(),pan:panText(),liu:liuduanText()};},resultText:function(){return resultText()},briefText:function(){return briefText()},fullText:function(){return resultText()},analysis:function(){return state.viewing&&state.viewing.zs},zhengAnalysis:function(){return state.viewing&&state.viewing.zan},current:function(){return state.viewing&&state.viewing.rec},storageOK:function(){try{window.localStorage.setItem('__t','1');window.localStorage.removeItem('__t');return true}catch(e){return false}}};
 fillSelects();renderSettings();matterUI();
 $('tm').value=nowLocal();renderPillars();setMode('auto');renderLines();renderHist();
 })();
