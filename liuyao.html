@@ -334,8 +334,9 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     var hourZhi = Math.floor((t.h + 1) / 2) % 12;
     var dIdxCal = (dj + 49) % 60; // 当日（0点换日）
     var dIdx = (opt.ziSwitch23 && t.h >= 23) ? (dIdxCal + 1) % 60 : dIdxCal;
-    // 时干：23点后的子时取次日日干起（五鼠遁）
-    var baseDay = t.h >= 23 ? (dIdxCal + 1) % 60 : dIdxCal;
+    // 时干随实际日柱起五鼠遁。0点换日时 23:00–24:00 仍是当日，子时用当日日干；
+    // 只有选了 23 点换日、日柱已经进一日，子时才用次日日干。日柱不进时不能单独改用次日。
+    var baseDay = dIdx;
     var hStem = ((baseDay % 10) * 2 + hourZhi) % 10;
     var hIdx; for (hIdx = 0; hIdx < 60; hIdx++) if (hIdx % 10 === hStem && hIdx % 12 === hourZhi) break;
     var xunStart = dIdx - dIdx % 10;
@@ -2038,16 +2039,12 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     "【进退】具备哪些现实条件可推进，缺哪些应暂缓；应期有卦理才报，不编日期时辰，不与现实条件混同。",
     "【反证】最强的相反卦理，及需现实核实的不确定因素。"
   ].join('\n');
-  // 【对象】只写“本人”或问卦人在高级设置里指定的他人；问句指向他人、或程序拿不准时，一律“以原问题为准”，不擅自判断关系
-  var PERSON_RE = /(某位|某个|这位|那位)?(同学|同事|朋友|领导|上级|老师|学生|孩子|儿子|女儿|老婆|老公|妻子|丈夫|女朋友|男朋友|女友|男友|对象|父亲|母亲|爸爸|妈妈|爸|妈|哥哥|姐姐|弟弟|妹妹|客户|邻居|嫌疑人|当事人|他们|她们|他|她|对方|某人|别人)/;
-  function objLine(qt, meta) {
-    var q = meta.q || '';
-    if (!q) return '以原问题为准';
+  // 【对象】只采用问卦人在高级设置里选定的对象。未选时不把“我起的卦”写成“问自己”，
+  // 也不从问句推断第三人（“其他”里的“他”、“帮我问”都不是已确认的对象），交给断卦者按原文判断。
+  function objLine(qt) {
+    qt = qt || {};
     if (qt.userSet && qt.userSet.target && qt.target) return qt.target === 'self' ? '本人' : '他人：' + (qt.rel || qt.who) + '（问卦人指定）';
-    var m = q.replace(/^我(们)?/, '').match(PERSON_RE);
-    if (qt.mode === '代占') return '以原问题为准（代他人问）';
-    if (qt.third || m) return '以原问题为准（涉及他人' + (qt.third && !/未指定|未选/.test(qt.who) ? '：' + qt.who : m ? '：' + m[0] : '') + '）';
-    return '本人';
+    return '以原问题为准';
   }
   function timeLine(r, meta) {
     var p = r.pillars || {};
@@ -2071,7 +2068,7 @@ table.qk td{white-space:nowrap}table.qk .bar{width:46px;gap:6px;height:10px;vert
     t.push('【六爻】上→初（六神 六亲 纳甲 阴阳动静 世应；动爻化出按本宫论六亲）');
     t = t.concat(yaoLines(r));
     var fu = []; r.lines.forEach(function (l, i) { if (l.fu) fu.push(S(l.fu.qin) + ' ' + l.fu.gan + l.fu.zhi + l.fu.wx + ' 伏于' + POS[i] + '爻' + S(l.qin) + l.zhi + l.wx + '下'); });
-    if (fu.length) t.push('【伏神】' + fu.join('；'));
+    t.push('【伏神】' + (fu.length ? fu.join('；') : '无'));
     return t;
   }
   function userYong(zs) { var Y = (zs && zs.yong) || {}; if (Y.status !== 'confirmed' || !Y.primary) return ''; var P0 = Y.primary; return S(P0.qin) + (P0.k === '世' || P0.k === '應' ? '（' + S(P0.via) + '）' : '') + (P0.role ? '＝' + P0.role : ''); }
